@@ -102,3 +102,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+python/data/it-en/europarl-v7.it-en.en
+python/data/it-en/europarl-v7.it-en.it
+python/data/it-en.tgz
