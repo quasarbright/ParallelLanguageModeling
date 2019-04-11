@@ -11860,7 +11860,7 @@ div#notebook {
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">charset</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">charlist</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&lt;null&gt;&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">charlist</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&lt;null&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;sos&gt;&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
         <span class="c1"># it is important that null is at index 0 since padding fills with zeroes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charlist</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">char</span><span class="p">):</span>
@@ -11880,7 +11880,7 @@ div#notebook {
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">charlist</span><span class="p">[</span><span class="n">charInd</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># charInd is a list of ints</span>
-            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">charInd</span><span class="p">)</span> <span class="k">for</span> <span class="n">charInd</span> <span class="ow">in</span> <span class="n">charInd</span><span class="p">]</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">charInd</span><span class="p">)</span> <span class="k">for</span> <span class="n">charInd</span> <span class="ow">in</span> <span class="n">charInd</span><span class="p">]</span>
 <span class="n">jp_chartable</span> <span class="o">=</span> <span class="n">CharacterTable</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">jp_sentences</span><span class="p">)))</span>
 <span class="n">en_chartable</span> <span class="o">=</span> <span class="n">CharacterTable</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">en_sentences</span><span class="p">)))</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">en_chartable</span><span class="o">.</span><span class="n">encode</span><span class="p">([[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">]]))</span>
@@ -11902,9 +11902,9 @@ div#notebook {
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>[[161, 152], [38, 75]]
-彦
-3910 172
+<pre>[[102, 78], [32, 47]]
+値
+3911 173
 </pre>
 </div>
 </div>
@@ -11985,14 +11985,32 @@ div#notebook {
 <span class="sd">    small train_test_split means mostly train data</span>
 <span class="sd">    output &quot;shapes&quot; (train_size, maxlen), (test_size, maxlen) with given batch size</span>
 <span class="sd">    &#39;&#39;&#39;</span>
-    <span class="k">def</span> <span class="nf">pad_sequence</span><span class="p">(</span><span class="n">sentences</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">encode_sequence</span><span class="p">(</span><span class="n">sentences</span><span class="p">,</span> <span class="n">ans</span><span class="p">):</span>
+        <span class="c1"># ans is whether this is the input sequence or the true sequence</span>
+        <span class="c1"># ans=True means don&#39;t append an &lt;sos&gt;</span>
+        <span class="c1"># ans=False means append an &lt;sos&gt; and remove the last</span>
+        <span class="n">sentence_indices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">sentence</span> <span class="ow">in</span> <span class="n">sentences</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">word</span><span class="p">:</span>
+                <span class="n">encoded</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">encoded</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">sentence</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">ans</span><span class="p">:</span>
+                <span class="c1"># add sos and remove last</span>
+                <span class="c1"># this is an input sequence</span>
+                <span class="n">encoded</span> <span class="o">=</span> <span class="p">[</span><span class="n">table</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;&lt;sos&gt;&#39;</span><span class="p">)]</span> <span class="o">+</span> <span class="n">encoded</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">sentence_indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">encoded</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sentence_indices</span>
+    <span class="k">def</span> <span class="nf">pad_sequence</span><span class="p">(</span><span class="n">sentences</span><span class="p">,</span> <span class="n">ans</span><span class="p">):</span>
+        <span class="c1"># ans is whether this is the input sequence or the true sequence</span>
+        <span class="c1"># ans=True means don&#39;t append an &lt;sos&gt;</span>
+        <span class="c1"># ans=False means append an &lt;sos&gt; and remove the last</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        [&#39;hello world&#39;, ...] or [[&#39;hello&#39;, &#39;world&#39;,...],...] -&gt; (padded long tensor, lengths tensor)</span>
 <span class="sd">        tensors are padded and sorted </span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">sentence_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">table</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">sentence</span><span class="p">))</span> <span class="k">for</span> <span class="n">sentence</span> <span class="ow">in</span> <span class="n">sentences</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">word</span><span class="p">:</span>
-            <span class="n">sentence_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">table</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span> <span class="k">for</span> <span class="n">sentence</span> <span class="ow">in</span> <span class="n">sentences</span><span class="p">]</span>
+        <span class="n">sentence_indices</span> <span class="o">=</span> <span class="n">encode_sequence</span><span class="p">(</span><span class="n">sentences</span><span class="p">,</span> <span class="n">ans</span><span class="p">)</span>
         <span class="c1"># list of list of indices</span>
         <span class="n">lengths</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span> <span class="k">for</span> <span class="n">sentence</span> <span class="ow">in</span> <span class="n">sentence_indices</span><span class="p">])</span>
         <span class="n">sentence_tensors</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">sentence</span> <span class="ow">in</span>  <span class="n">sentence_indices</span><span class="p">]</span>
@@ -12012,11 +12030,15 @@ div#notebook {
     <span class="n">train_sentences</span> <span class="o">=</span> <span class="n">sentences</span><span class="p">[</span><span class="n">split</span><span class="p">:]</span>
     <span class="n">test_sentences</span> <span class="o">=</span> <span class="n">sentences</span><span class="p">[:</span><span class="n">split</span><span class="p">]</span>
     
-    <span class="n">padded_train</span> <span class="o">=</span> <span class="n">pad_sequence</span><span class="p">(</span><span class="n">train_sentences</span><span class="p">)</span>
-    <span class="n">padded_test</span> <span class="o">=</span> <span class="n">pad_sequence</span><span class="p">(</span><span class="n">test_sentences</span><span class="p">)</span>
+    <span class="c1"># the input sequences (with sos and removed last)</span>
+    <span class="n">padded_train_in</span> <span class="o">=</span> <span class="n">pad_sequence</span><span class="p">(</span><span class="n">train_sentences</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">padded_test_in</span> <span class="o">=</span> <span class="n">pad_sequence</span><span class="p">(</span><span class="n">test_sentences</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="c1"># the output sequences (with no sos)</span>
+    <span class="n">padded_train_true</span> <span class="o">=</span> <span class="n">pad_sequence</span><span class="p">(</span><span class="n">train_sentences</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">padded_test_true</span> <span class="o">=</span> <span class="n">pad_sequence</span><span class="p">(</span><span class="n">test_sentences</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
     
-    <span class="n">padded_trainset</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">TensorDataset</span><span class="p">(</span><span class="o">*</span><span class="n">padded_train</span><span class="p">)</span>
-    <span class="n">padded_testset</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">TensorDataset</span><span class="p">(</span><span class="o">*</span><span class="n">padded_test</span><span class="p">)</span>
+    <span class="n">padded_trainset</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">TensorDataset</span><span class="p">(</span><span class="o">*</span><span class="n">padded_train_in</span><span class="p">,</span> <span class="o">*</span><span class="n">padded_train_true</span><span class="p">)</span>
+    <span class="n">padded_testset</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">TensorDataset</span><span class="p">(</span><span class="o">*</span><span class="n">padded_test_in</span><span class="p">,</span> <span class="o">*</span><span class="n">padded_test_true</span><span class="p">)</span>
     
     <span class="n">padded_trainloader</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="n">padded_trainset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="n">padded_testloader</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="n">padded_testset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
@@ -12037,7 +12059,7 @@ div#notebook {
 <div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">train_model</span><span class="p">(</span><span class="n">trainloader</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="n">lr</span><span class="o">=.</span><span class="mi">1</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">train_model</span><span class="p">(</span><span class="n">trainloader</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="n">lr</span><span class="o">=.</span><span class="mi">1</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">):</span>
     <span class="n">model</span> <span class="o">=</span> <span class="n">Predictor</span><span class="p">(</span><span class="n">table</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
     <span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">SGD</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">)</span>
     <span class="n">loss_fn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">NLLLoss</span><span class="p">()</span>
@@ -12047,16 +12069,16 @@ div#notebook {
         <span class="n">num_losses</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">trainloader</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
             <span class="n">model</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
-            <span class="n">padded_seq</span><span class="p">,</span> <span class="n">lengths</span> <span class="o">=</span> <span class="n">data</span>
-            <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">padded_seq</span><span class="p">,</span> <span class="n">lengths</span><span class="p">)</span>
+            <span class="n">padded_seq_in</span><span class="p">,</span> <span class="n">lengths_in</span><span class="p">,</span> <span class="n">padded_seq_true</span><span class="p">,</span> <span class="n">lengths_true</span> <span class="o">=</span> <span class="n">data</span>
+            <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">padded_seq_in</span><span class="p">,</span> <span class="n">lengths_in</span><span class="p">)</span>
             
-            <span class="n">batch_size</span> <span class="o">=</span> <span class="n">padded_seq</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="n">maxlen</span> <span class="o">=</span> <span class="n">padded_seq</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">batch_size</span> <span class="o">=</span> <span class="n">padded_seq_true</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">maxlen</span> <span class="o">=</span> <span class="n">padded_seq_true</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
             <span class="n">vocab_size</span> <span class="o">=</span> <span class="n">pred</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-            <span class="n">padded_seq_flat</span> <span class="o">=</span> <span class="n">padded_seq</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size</span><span class="o">*</span><span class="n">maxlen</span><span class="p">)</span>
+            <span class="n">padded_seq_true_flat</span> <span class="o">=</span> <span class="n">padded_seq_true</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size</span><span class="o">*</span><span class="n">maxlen</span><span class="p">)</span>
             <span class="n">pred_flat</span> <span class="o">=</span> <span class="n">pred</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size</span><span class="o">*</span><span class="n">maxlen</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">)</span>
             
-            <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">pred_flat</span><span class="p">,</span> <span class="n">padded_seq_flat</span><span class="p">)</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">pred_flat</span><span class="p">,</span> <span class="n">padded_seq_true_flat</span><span class="p">)</span>
             <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
             <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
             <span class="n">total_loss</span> <span class="o">+=</span> <span class="n">loss</span><span class="o">.</span><span class="n">data</span>
@@ -12135,17 +12157,17 @@ div#notebook {
 
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>jp training
-loss at epoch 10: 0.8963164687156677
-loss at epoch 20: 0.8341969847679138
-loss at epoch 30: 0.803242564201355
-loss at epoch 40: 0.7749859094619751
-loss at epoch 50: 0.7511147856712341
-loss at epoch 60: 0.730737030506134
-loss at epoch 70: 0.7125517725944519
-loss at epoch 80: 0.6955256462097168
-loss at epoch 90: 0.6789075136184692
-loss at epoch 100: 0.6623553037643433
-final loss after 100 epochs: 0.6623553037643433
+loss at epoch 20: 0.814089834690094
+loss at epoch 40: 0.7519795894622803
+loss at epoch 60: 0.7228744029998779
+loss at epoch 80: 0.709435760974884
+loss at epoch 100: 0.7016097903251648
+loss at epoch 120: 0.6961705684661865
+loss at epoch 140: 0.691956102848053
+loss at epoch 160: 0.6884689927101135
+loss at epoch 180: 0.6854720115661621
+loss at epoch 200: 0.682823121547699
+final loss after 200 epochs: 0.682823121547699
 en training
 </pre>
 </div>
@@ -12169,17 +12191,17 @@ en training
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>loss at epoch 10: 0.2676386535167694
-loss at epoch 20: 0.18314088881015778
-loss at epoch 30: 0.1319272667169571
-loss at epoch 40: 0.10008544474840164
-loss at epoch 50: 0.07900269329547882
-loss at epoch 60: 0.06452611833810806
-loss at epoch 70: 0.05410991609096527
-loss at epoch 80: 0.04621864855289459
-loss at epoch 90: 0.03998982906341553
-loss at epoch 100: 0.034939952194690704
-final loss after 100 epochs: 0.034939952194690704
+<pre>loss at epoch 20: 0.25185489654541016
+loss at epoch 40: 0.23443341255187988
+loss at epoch 60: 0.2246248722076416
+loss at epoch 80: 0.21615473926067352
+loss at epoch 100: 0.20942629873752594
+loss at epoch 120: 0.2041759341955185
+loss at epoch 140: 0.19995242357254028
+loss at epoch 160: 0.19644670188426971
+loss at epoch 180: 0.19343675673007965
+loss at epoch 200: 0.1907539814710617
+final loss after 200 epochs: 0.1907539814710617
 </pre>
 </div>
 </div>
@@ -12193,17 +12215,17 @@ final loss after 100 epochs: 0.034939952194690704
 
 <div class="output_text output_subarea output_execute_result">
 <pre>(Predictor(
-   (embedding): Embedding(3910, 64)
+   (embedding): Embedding(3911, 64)
    (RNN): LSTM(64, 100, batch_first=True)
    (linear): Sequential(
-     (0): Linear(in_features=100, out_features=3910, bias=True)
+     (0): Linear(in_features=100, out_features=3911, bias=True)
      (1): LogSoftmax()
    )
  ), Predictor(
-   (embedding): Embedding(172, 64)
+   (embedding): Embedding(173, 64)
    (RNN): LSTM(64, 100, batch_first=True)
    (linear): Sequential(
-     (0): Linear(in_features=100, out_features=172, bias=True)
+     (0): Linear(in_features=100, out_features=173, bias=True)
      (1): LogSoftmax()
    )
  ))</pre>
@@ -12255,7 +12277,7 @@ final loss after 100 epochs: 0.034939952194690704
     <span class="n">character_accuracies</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">perplexities</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">testloader</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
-        <span class="n">padded_seq</span><span class="p">,</span> <span class="n">lengths</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="n">padded_seq_in</span><span class="p">,</span> <span class="n">lengths_in</span><span class="p">,</span> <span class="n">padded_seq</span><span class="p">,</span> <span class="n">lengths</span> <span class="o">=</span> <span class="n">data</span>
         <span class="n">pred</span><span class="p">,</span> <span class="n">maxInds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">padded_seq</span><span class="p">,</span> <span class="n">lengths</span><span class="p">)</span>
         
         <span class="n">perplexity</span> <span class="o">=</span> <span class="n">perplexity_metric</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">padded_seq</span><span class="p">)</span>
@@ -12508,14 +12530,14 @@ in	1175
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[15]:</div>
+<div class="prompt input_prompt">In&nbsp;[14]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># word encoding and decoding</span>
 <span class="k">class</span> <span class="nc">WordTable</span><span class="p">:</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wordset</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">wordset</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">wordset</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">wordlist</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&lt;null&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;unk&gt;&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">wordset</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wordlist</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&lt;null&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;sos&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;unk&gt;&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">wordset</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wordlist</span><span class="p">)</span>
         
         
@@ -12565,9 +12587,9 @@ in	1175
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>holding
+<pre>Junction
 &lt;unk&gt;
-4002
+4003
 </pre>
 </div>
 </div>
@@ -12578,7 +12600,7 @@ in	1175
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="prompt input_prompt">In&nbsp;[15]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># load data</span>
@@ -12592,7 +12614,7 @@ in	1175
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[17]:</div>
+<div class="prompt input_prompt">In&nbsp;[16]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;training english word model&#39;</span><span class="p">)</span>
@@ -12614,17 +12636,17 @@ in	1175
 
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>training english word model
-loss at epoch 10: 0.3745356500148773
-loss at epoch 20: 0.3207111358642578
-loss at epoch 30: 0.285001277923584
-loss at epoch 40: 0.26759713888168335
-loss at epoch 50: 0.2563556432723999
-loss at epoch 60: 0.24777519702911377
-loss at epoch 70: 0.24099139869213104
-loss at epoch 80: 0.2355344444513321
-loss at epoch 90: 0.23100298643112183
-loss at epoch 100: 0.22712047398090363
-final loss after 100 epochs: 0.22712047398090363
+loss at epoch 20: 0.327519029378891
+loss at epoch 40: 0.2957797348499298
+loss at epoch 60: 0.28763270378112793
+loss at epoch 80: 0.2824614942073822
+loss at epoch 100: 0.27881553769111633
+loss at epoch 120: 0.2760738134384155
+loss at epoch 140: 0.27389097213745117
+loss at epoch 160: 0.27206066250801086
+loss at epoch 180: 0.2704685628414154
+loss at epoch 200: 0.2690542936325073
+final loss after 200 epochs: 0.2690542936325073
 </pre>
 </div>
 </div>
@@ -12635,7 +12657,7 @@ final loss after 100 epochs: 0.22712047398090363
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[18]:</div>
+<div class="prompt input_prompt">In&nbsp;[17]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">print_metrics</span><span class="p">(</span><span class="n">jp_model</span><span class="p">,</span> <span class="s1">&#39;jp character predictor&#39;</span><span class="p">,</span> <span class="n">padded_jp_testloader</span><span class="p">)</span>
@@ -12658,20 +12680,20 @@ final loss after 100 epochs: 0.22712047398090363
 
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>model: jp character predictor
-	validation loss: 0.6796544634160542
-	sentence accuracy: 0.0008571428571428572
-	character accuracy: 0.9120515418737644
-	perplexity: 0.002167849192874908
+	validation loss: 1.0359487959316798
+	sentence accuracy: 0.0
+	character accuracy: 0.8824169164169166
+	perplexity: 0.000256158712471985
 model: en character predictor
-	validation loss: 0.037989046247232525
-	sentence accuracy: 0.2675401635401635
-	character accuracy: 0.9946749398749398
-	perplexity: 0.6145452432555603
+	validation loss: 0.38650648295879364
+	sentence accuracy: 0.0
+	character accuracy: 0.9165669905904281
+	perplexity: 0.00980208015188648
 model: english word to word
-	validation loss: 0.3671317316946529
-	sentence accuracy: 0.2557873977873978
-	word accuracy: 0.9556184802851468
-	perplexity: 0.267146103237912
+	validation loss: 0.5625579747415724
+	sentence accuracy: 0.0
+	word accuracy: 0.9287701863354039
+	perplexity: 0.001651558462524638
 </pre>
 </div>
 </div>
@@ -12680,33 +12702,46 @@ model: english word to word
 </div>
 
 </div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[18]:</div>
 <div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="results-and-conclusions">results and conclusions<a class="anchor-link" href="#results-and-conclusions">&#182;</a></h3><ul>
-<li>the english character-to-character predictor vastly outperformed the japanese character-to-character predictor</li>
-<li>This may be due to the higher complexity of the japanese text. There are 3912 characters in the japanese text, but only 174 in the english text.</li>
-<li>Since the model uses a linear layer and softmax with dimensions equal to the number of characters, that means there is a lot more parameters for the japanese model to learn.</li>
-<li>Due to the nature of the Japanese writing system, the model must effectively learn word-to-word and character-to-character prediction at the same time. This could be why it performed more poorly than the english model</li>
-<li>Although the english model had to learn english spelling (which is hard) and also how words fit together, it still performed much better</li>
-<li>character accuracies were pretty similar, but in all other metrics, the english model performed significantly better. Perhaps this means the japanese model only leanred some short-term patterns, but not long-term "meaning" to predict an entire sentence accurately.</li>
-<li>sentence accuracy is near zero with the japanese model, but 25% with the english model.</li>
-<li>High character accuracy despite low sentence accuracy and low perplexity shows that the japanese model is not confident in its correct predictions and does not have the ability to model language on a sentence level like the english model did.</li>
-<li>despite theoretically having similar model complexity, the english word predictor model significantly out-performs the japanese character-to-character model.</li>
-<li>perhaps the mixture of character and word prediction in japanese is what makes it so difficult. Or perhaps there are other factors that make it more difficult, such as japanese grammar being harder to model, or kanji having multiple meanings. Or maybe the translation is bad/inconsistent.</li>
-<li>To investigate whether the grammar is causing difficulty to model japanese, a translation dataset with Japanese text transcribed into the latin alphabet with words separated by spaces would be ideal. With such a dataset, "true" character to character and word to word prediction can be done in japanese.</li>
-<li>the english word prediction model significantly outperformed the japanese character prediction model. This shows that english is easier to model than japanese in both ways. It isn't just easier to model with character prediction, but word prediction as well. I think it is because there are 3 different writing systems in japanese and they are used and structured very differently. It is hard to model 3 writing systems at the same time.</li>
-<li>the english word prediction model had a similar sentence accuracy to the english character prediction model, despite the higher complexity. This is likely due to the fact that words are ordered in a logical way, while a sequence of characters is more arbitrary. When the character prediction model predicts a sentence, it implicitly models the words from the sequence of characters and the current word being built, all in one hidden state vector. This must be difficult. If it weren't for the increased complexity of the word prediction model due to the higher vocabulary space, it might outperform the character prediction model.</li>
-<li>the loss for the english character model went down do 10% of its original loss during training, but the word prediction model approximately halved its loss in the same number of epochs. This could be due to the complexity differences between the models.<br>
-### future research</li>
-<li>use a parallel translated text transcribed to the latin alphabet. this would eliminate some of the effects of the writing system and come closer to comparing the grammars and vocabularies of the languages and their easiness to learn/model.</li>
-<li>investigate different hyperparameters (such as embedding/hidden dimensions, learning rates, etc.) maybe if all of the models had a larger hidden vector size, the japanese model might outperform the english models. I kept all hyperparameters the same across all models to reduce the number of independent variables, but maybe it would be better to increase model complexity according to the complexity of the task. perhaps scale embedding dimensions linearly with vocab size?</li>
-<li>compare english to other european languages to isolate the language from the writing system. Is english easier to model than italian? is spanish easier to model than italian? Here, it's hard to tell how much of the difference in performance is from the writing systems and how much is from the languages and grammars themselves.</li>
-</ul>
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">predict_sentence</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="n">loader</span><span class="p">):</span>
+    <span class="n">seq_in</span><span class="p">,</span> <span class="n">len_in</span><span class="p">,</span> <span class="n">seq_true</span><span class="p">,</span> <span class="n">len_true</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">loader</span><span class="p">)</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+    <span class="n">pred</span><span class="p">,</span> <span class="n">maxInds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">seq_in</span><span class="p">,</span> <span class="n">len_in</span><span class="p">)</span>
+    <span class="n">trues</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">seq_true</span><span class="p">[</span><span class="mi">200</span><span class="p">:</span><span class="mi">201</span><span class="p">]</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">maxInds</span><span class="p">[</span><span class="mi">200</span><span class="p">:</span><span class="mi">201</span><span class="p">]</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+    <span class="n">zipped</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">trues</span><span class="p">,</span> <span class="n">preds</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">t</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">zipped</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+<span class="n">predict_sentence</span><span class="p">(</span><span class="n">word_model</span><span class="p">,</span> <span class="n">wordtable</span><span class="p">,</span> <span class="n">padded_word_testloader</span><span class="p">)</span>
+</pre></div>
 
 </div>
 </div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>[&#39;Six&#39;, &#39;&lt;unk&gt;&#39;, &#39;of&#39;, &#39;Takashima&#39;, &#39;,&#39;, &#39;&lt;unk&gt;&#39;, &#39;,&#39;, &#39;&lt;unk&gt;&#39;, &#39;,&#39;, &#39;&lt;unk&gt;&#39;, &#39;,&#39;, &#39;&lt;unk&gt;&#39;, &#39;and&#39;, &#39;Aichi&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;]
+[&#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;]
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
 </div>
     </div>
   </div>
