@@ -11861,6 +11861,8 @@ div#notebook {
         <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="n">charset</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">charlist</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&lt;null&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;sos&gt;&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charlist</span><span class="p">),))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="c1"># it is important that null is at index 0 since padding fills with zeroes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charlist</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">char</span><span class="p">):</span>
@@ -11902,8 +11904,8 @@ div#notebook {
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>[[102, 78], [32, 47]]
-値
+<pre>[[136, 150], [27, 56]]
+淀
 3911 173
 </pre>
 </div>
@@ -11936,6 +11938,7 @@ div#notebook {
         <span class="p">)</span>
         <span class="c1"># linear layer for converting from hidden state to softmax</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">linear</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Tanh</span><span class="p">(),</span>
             <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">),</span>
             <span class="n">nn</span><span class="o">.</span><span class="n">LogSoftmax</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
         <span class="p">)</span>
@@ -11978,7 +11981,7 @@ div#notebook {
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># load data</span>
-<span class="k">def</span> <span class="nf">padded_train_test</span><span class="p">(</span><span class="n">sentences</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="n">train_test_split</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">word</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">padded_train_test</span><span class="p">(</span><span class="n">sentences</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="n">train_test_split</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">word</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    small train_test_split means mostly train data</span>
 <span class="sd">    [&#39;hello world&#39;, ...] or [[&#39;hello&#39;, &#39;world&#39;,...],...], table, train_test_split -&gt; (train data, test data) padded tensor dataloaders</span>
@@ -12061,8 +12064,9 @@ div#notebook {
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">train_model</span><span class="p">(</span><span class="n">trainloader</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="n">lr</span><span class="o">=.</span><span class="mi">1</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">):</span>
     <span class="n">model</span> <span class="o">=</span> <span class="n">Predictor</span><span class="p">(</span><span class="n">table</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
     <span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">SGD</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">)</span>
-    <span class="n">loss_fn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">NLLLoss</span><span class="p">()</span>
+    <span class="n">loss_fn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">NLLLoss</span><span class="p">(</span><span class="n">weight</span><span class="o">=</span><span class="n">table</span><span class="o">.</span><span class="n">weights</span><span class="p">)</span>
     <span class="n">losses</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">epochs</span><span class="p">):</span>
         <span class="n">total_loss</span> <span class="o">=</span> <span class="mi">0</span>
@@ -12109,6 +12113,7 @@ div#notebook {
 <span class="k">def</span> <span class="nf">load_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;loads state dict into given model and returns it&#39;&#39;&#39;</span>
     <span class="n">model</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">get_state_path</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">model</span>
 </pre></div>
 
@@ -12137,7 +12142,7 @@ div#notebook {
         <span class="n">save_model</span><span class="p">(</span><span class="n">en_model</span><span class="p">,</span> <span class="s1">&#39;en_char_model&#39;</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">jp_model</span> <span class="o">=</span> <span class="n">load_model</span><span class="p">(</span><span class="n">jp_model</span><span class="p">,</span> <span class="s1">&#39;jp_char_model&#39;</span><span class="p">)</span>
-        <span class="n">en_model</span> <span class="o">=</span> <span class="n">load_model</span><span class="p">(</span><span class="n">en_model</span><span class="p">,</span> <span class="s1">&#39;en_char_model&#39;</span><span class="p">)</span>
+        <span class="n">en_model</span> <span class="o">=</span> <span class="n">load_model</span><span class="p">(</span><span class="n">en_model</span><span class="p">,</span> <span class="s1">&#39;en_char_model&#39;</span><span class="p">)</span> 
     <span class="k">return</span> <span class="n">jp_model</span><span class="p">,</span> <span class="n">en_model</span>
 <span class="n">initialize_models</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
@@ -12157,17 +12162,17 @@ div#notebook {
 
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>jp training
-loss at epoch 20: 0.814089834690094
-loss at epoch 40: 0.7519795894622803
-loss at epoch 60: 0.7228744029998779
-loss at epoch 80: 0.709435760974884
-loss at epoch 100: 0.7016097903251648
-loss at epoch 120: 0.6961705684661865
-loss at epoch 140: 0.691956102848053
-loss at epoch 160: 0.6884689927101135
-loss at epoch 180: 0.6854720115661621
-loss at epoch 200: 0.682823121547699
-final loss after 200 epochs: 0.682823121547699
+loss at epoch 20: 6.592938423156738
+loss at epoch 40: 6.347495079040527
+loss at epoch 60: 6.137555122375488
+loss at epoch 80: 5.977423191070557
+loss at epoch 100: 5.852034568786621
+loss at epoch 120: 5.749088764190674
+loss at epoch 140: 5.660687446594238
+loss at epoch 160: 5.584757328033447
+loss at epoch 180: 5.516053199768066
+loss at epoch 200: 5.453878879547119
+final loss after 200 epochs: 5.453878879547119
 en training
 </pre>
 </div>
@@ -12191,17 +12196,17 @@ en training
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>loss at epoch 20: 0.25185489654541016
-loss at epoch 40: 0.23443341255187988
-loss at epoch 60: 0.2246248722076416
-loss at epoch 80: 0.21615473926067352
-loss at epoch 100: 0.20942629873752594
-loss at epoch 120: 0.2041759341955185
-loss at epoch 140: 0.19995242357254028
-loss at epoch 160: 0.19644670188426971
-loss at epoch 180: 0.19343675673007965
-loss at epoch 200: 0.1907539814710617
-final loss after 200 epochs: 0.1907539814710617
+<pre>loss at epoch 20: 2.153613567352295
+loss at epoch 40: 2.024113178253174
+loss at epoch 60: 1.9577741622924805
+loss at epoch 80: 1.9119973182678223
+loss at epoch 100: 1.8773154020309448
+loss at epoch 120: 1.8499114513397217
+loss at epoch 140: 1.8273781538009644
+loss at epoch 160: 1.8079651594161987
+loss at epoch 180: 1.790789008140564
+loss at epoch 200: 1.7754677534103394
+final loss after 200 epochs: 1.7754677534103394
 </pre>
 </div>
 </div>
@@ -12218,104 +12223,23 @@ final loss after 200 epochs: 0.1907539814710617
    (embedding): Embedding(3911, 64)
    (RNN): LSTM(64, 100, batch_first=True)
    (linear): Sequential(
-     (0): Linear(in_features=100, out_features=3911, bias=True)
-     (1): LogSoftmax()
+     (0): Tanh()
+     (1): Linear(in_features=100, out_features=3911, bias=True)
+     (2): LogSoftmax()
    )
  ), Predictor(
    (embedding): Embedding(173, 64)
    (RNN): LSTM(64, 100, batch_first=True)
    (linear): Sequential(
-     (0): Linear(in_features=100, out_features=173, bias=True)
-     (1): LogSoftmax()
+     (0): Tanh()
+     (1): Linear(in_features=100, out_features=173, bias=True)
+     (2): LogSoftmax()
    )
  ))</pre>
 </div>
 
 </div>
 
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[9]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># metrics</span>
-<span class="k">def</span> <span class="nf">perplexity_metric</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">actual</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">    pred (batch, seq, vocab) logsoftmax</span>
-<span class="sd">    actual (batch, seq) longs</span>
-<span class="sd">    geometric mean of product of p(next word | previous words) for whole sentence</span>
-<span class="sd">    average (arithmetic mean) by batch</span>
-<span class="sd">    &#39;&#39;&#39;</span>
-    <span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">vocab_size</span> <span class="o">=</span> <span class="n">pred</span><span class="o">.</span><span class="n">shape</span>
-    <span class="n">pred</span> <span class="o">=</span> <span class="n">pred</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
-    <span class="n">pred</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span>
-    <span class="n">geo_means</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># probabilities of correct characters</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">):</span>
-        <span class="n">product</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="n">num_factors</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">curr_pred</span> <span class="o">=</span> <span class="n">pred</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        <span class="n">curr_actual</span> <span class="o">=</span> <span class="n">actual</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">seq_len</span><span class="p">):</span>
-            <span class="n">trueInd</span> <span class="o">=</span> <span class="n">curr_actual</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
-            <span class="c1"># the character index at this timestep</span>
-            <span class="k">if</span> <span class="n">trueInd</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="c1"># we don&#39;t care how well it predicts nulls</span>
-                <span class="n">predSoftmax</span> <span class="o">=</span> <span class="n">curr_pred</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
-                <span class="n">confidence</span> <span class="o">=</span> <span class="n">predSoftmax</span><span class="p">[</span><span class="n">trueInd</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
-                <span class="n">product</span> <span class="o">*=</span> <span class="n">confidence</span>
-                <span class="n">num_factors</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="n">geo_means</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">product</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">num_factors</span><span class="p">))</span>
-    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">geo_means</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">geo_means</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">print_metrics</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">testloader</span><span class="p">,</span> <span class="n">word</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="n">loss_fn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">NLLLoss</span><span class="p">()</span>
-    <span class="n">losses</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">sentence_accuracies</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">character_accuracies</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">perplexities</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">testloader</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
-        <span class="n">padded_seq_in</span><span class="p">,</span> <span class="n">lengths_in</span><span class="p">,</span> <span class="n">padded_seq</span><span class="p">,</span> <span class="n">lengths</span> <span class="o">=</span> <span class="n">data</span>
-        <span class="n">pred</span><span class="p">,</span> <span class="n">maxInds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">padded_seq</span><span class="p">,</span> <span class="n">lengths</span><span class="p">)</span>
-        
-        <span class="n">perplexity</span> <span class="o">=</span> <span class="n">perplexity_metric</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">padded_seq</span><span class="p">)</span>
-        
-        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">padded_seq</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">maxlen</span> <span class="o">=</span> <span class="n">padded_seq</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">vocab_size</span> <span class="o">=</span> <span class="n">pred</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        
-        <span class="n">padded_seq_flat</span> <span class="o">=</span> <span class="n">padded_seq</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size</span><span class="o">*</span><span class="n">maxlen</span><span class="p">)</span>
-        <span class="n">pred_flat</span> <span class="o">=</span> <span class="n">pred</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size</span><span class="o">*</span><span class="n">maxlen</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">)</span>
-        <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">pred_flat</span><span class="p">,</span> <span class="n">padded_seq_flat</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
-        
-        <span class="n">correct_characters</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">maxInds</span> <span class="o">==</span> <span class="n">padded_seq</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
-        <span class="n">total_characters</span> <span class="o">=</span> <span class="n">batch_size</span><span class="o">*</span><span class="n">maxlen</span>
-        <span class="n">correct_sentences</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">total_sentences</span> <span class="o">=</span> <span class="n">batch_size</span>
-        
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">maxInds</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">padded_seq</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
-                <span class="n">correct_sentences</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="n">sentence_accuracy</span> <span class="o">=</span> <span class="n">correct_sentences</span> <span class="o">/</span> <span class="n">total_sentences</span>
-        <span class="n">character_accuracy</span> <span class="o">=</span> <span class="n">correct_characters</span> <span class="o">/</span> <span class="n">total_characters</span>
-        
-        <span class="n">losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
-        <span class="n">sentence_accuracies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sentence_accuracy</span><span class="p">)</span>
-        <span class="n">character_accuracies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">character_accuracy</span><span class="p">)</span>
-        <span class="n">perplexities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">perplexity</span><span class="p">)</span>
-    <span class="n">loss_avg</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">losses</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">losses</span><span class="p">)</span>
-    <span class="n">sentence_accuracy_avg</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">sentence_accuracies</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">sentence_accuracies</span><span class="p">)</span>
-    <span class="n">character_accuracy_avg</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">character_accuracies</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">character_accuracies</span><span class="p">)</span>
-    <span class="n">perplexity_avg</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">perplexities</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">perplexities</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">word</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;model: </span><span class="si">{}</span><span class="se">\n\t</span><span class="s1">validation loss: </span><span class="si">{}</span><span class="se">\n\t</span><span class="s1">sentence accuracy: </span><span class="si">{}</span><span class="se">\n\t</span><span class="s1">word accuracy: </span><span class="si">{}</span><span class="se">\n\t</span><span class="s1">perplexity: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">loss_avg</span><span class="p">,</span> <span class="n">sentence_accuracy_avg</span><span class="p">,</span> <span class="n">character_accuracy_avg</span><span class="p">,</span> <span class="n">perplexity_avg</span><span class="p">))</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;model: </span><span class="si">{}</span><span class="se">\n\t</span><span class="s1">validation loss: </span><span class="si">{}</span><span class="se">\n\t</span><span class="s1">sentence accuracy: </span><span class="si">{}</span><span class="se">\n\t</span><span class="s1">character accuracy: </span><span class="si">{}</span><span class="se">\n\t</span><span class="s1">perplexity: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">loss_avg</span><span class="p">,</span> <span class="n">sentence_accuracy_avg</span><span class="p">,</span> <span class="n">character_accuracy_avg</span><span class="p">,</span> <span class="n">perplexity_avg</span><span class="p">))</span>
-</pre></div>
-
-</div>
 </div>
 </div>
 
@@ -12331,7 +12255,7 @@ final loss after 200 epochs: 0.1907539814710617
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="prompt input_prompt">In&nbsp;[9]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">nltk</span>
@@ -12361,7 +12285,7 @@ final loss after 200 epochs: 0.1907539814710617
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[10]:</div>
+<div class="prompt output_prompt">Out[9]:</div>
 
 
 
@@ -12378,7 +12302,7 @@ final loss after 200 epochs: 0.1907539814710617
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[11]:</div>
+<div class="prompt input_prompt">In&nbsp;[10]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># tokenize sentences</span>
@@ -12415,7 +12339,7 @@ final loss after 200 epochs: 0.1907539814710617
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[12]:</div>
+<div class="prompt input_prompt">In&nbsp;[11]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">wordlist</span> <span class="o">=</span> <span class="p">[]</span>
@@ -12436,7 +12360,7 @@ final loss after 200 epochs: 0.1907539814710617
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[12]:</div>
+<div class="prompt output_prompt">Out[11]:</div>
 
 
 
@@ -12455,17 +12379,17 @@ final loss after 200 epochs: 0.1907539814710617
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="that's-way-too-many-words!">that's way too many words!<a class="anchor-link" href="#that's-way-too-many-words!">&#182;</a></h3><p>let's limit the vocab size to 4000 to make the complexity theoretically similar to the japanese model</p>
+<h3 id="that's-way-too-many-words!">that's way too many words!<a class="anchor-link" href="#that's-way-too-many-words!">&#182;</a></h3><p>let's limit the vocab size so it can learn</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[13]:</div>
+<div class="prompt input_prompt">In&nbsp;[12]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">max_vocab_size</span> <span class="o">=</span> <span class="mi">4000</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">max_vocab_size</span> <span class="o">=</span> <span class="mi">10000</span>
 <span class="c1"># word -&gt; frequency</span>
 <span class="n">counts</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">wordlist</span><span class="p">:</span>
@@ -12513,13 +12437,13 @@ in	1175
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[13]:</div>
+<div class="prompt output_prompt">Out[12]:</div>
 
 
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>4000</pre>
+<pre>10000</pre>
 </div>
 
 </div>
@@ -12530,7 +12454,7 @@ in	1175
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[14]:</div>
+<div class="prompt input_prompt">In&nbsp;[13]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># word encoding and decoding</span>
@@ -12538,6 +12462,9 @@ in	1175
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wordset</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">wordset</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">wordset</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">wordlist</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&lt;null&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;sos&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;unk&gt;&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">wordset</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wordlist</span><span class="p">),))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wordlist</span><span class="p">)</span>
         
         
@@ -12587,9 +12514,9 @@ in	1175
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Junction
+<pre>Sadanori
 &lt;unk&gt;
-4003
+10003
 </pre>
 </div>
 </div>
@@ -12600,7 +12527,7 @@ in	1175
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[15]:</div>
+<div class="prompt input_prompt">In&nbsp;[14]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># load data</span>
@@ -12614,11 +12541,12 @@ in	1175
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="prompt input_prompt">In&nbsp;[15]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;training english word model&#39;</span><span class="p">)</span>
 <span class="n">word_model</span><span class="p">,</span> <span class="n">word_model_losses</span> <span class="o">=</span> <span class="n">train_model</span><span class="p">(</span><span class="n">padded_word_trainloader</span><span class="p">,</span> <span class="n">wordtable</span><span class="p">)</span>
+<span class="n">save_model</span><span class="p">(</span><span class="n">word_model</span><span class="p">,</span> <span class="s1">&#39;word_model&#39;</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12636,21 +12564,177 @@ in	1175
 
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>training english word model
-loss at epoch 20: 0.327519029378891
-loss at epoch 40: 0.2957797348499298
-loss at epoch 60: 0.28763270378112793
-loss at epoch 80: 0.2824614942073822
-loss at epoch 100: 0.27881553769111633
-loss at epoch 120: 0.2760738134384155
-loss at epoch 140: 0.27389097213745117
-loss at epoch 160: 0.27206066250801086
-loss at epoch 180: 0.2704685628414154
-loss at epoch 200: 0.2690542936325073
-final loss after 200 epochs: 0.2690542936325073
+loss at epoch 20: 7.242931365966797
+loss at epoch 40: 7.058391571044922
+loss at epoch 60: 6.936269760131836
+loss at epoch 80: 6.847349166870117
+loss at epoch 100: 6.774849891662598
+loss at epoch 120: 6.705915927886963
+loss at epoch 140: 6.642947673797607
+loss at epoch 160: 6.593444347381592
+loss at epoch 180: 6.545262336730957
+loss at epoch 200: 6.497441291809082
+final loss after 200 epochs: 6.497441291809082
 </pre>
 </div>
 </div>
 
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stderr output_text">
+<pre>c:\users\mthun\appdata\local\programs\python\python35\lib\site-packages\torch\serialization.py:251: UserWarning: Couldn&#39;t retrieve source code for container of type Predictor. It won&#39;t be checked for correctness upon loading.
+  &#34;type &#34; + obj.__name__ + &#34;. It won&#39;t be checked &#34;
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># metrics</span>
+<span class="k">def</span> <span class="nf">perplexity_metric</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">actual</span><span class="p">,</span> <span class="n">masked_inds</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    pred (batch, seq, vocab) logsoftmax</span>
+<span class="sd">    actual (batch, seq) longs</span>
+<span class="sd">    geometric mean of product of p(next word | previous words) for whole sentence</span>
+<span class="sd">    average (arithmetic mean) by batch</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">vocab_size</span> <span class="o">=</span> <span class="n">pred</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">pred</span> <span class="o">=</span> <span class="n">pred</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+    <span class="n">actual</span> <span class="o">=</span> <span class="n">actual</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+    <span class="n">pred</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span>
+    <span class="n">geo_means</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># probabilities of correct characters</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">):</span>
+        <span class="n">product</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">num_factors</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">curr_pred</span> <span class="o">=</span> <span class="n">pred</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">curr_actual</span> <span class="o">=</span> <span class="n">actual</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">seq_len</span><span class="p">):</span>
+            <span class="n">trueInd</span> <span class="o">=</span> <span class="n">curr_actual</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+            <span class="c1"># the character index at this timestep</span>
+            <span class="k">if</span> <span class="n">trueInd</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">masked_inds</span><span class="p">:</span>
+                <span class="c1"># we don&#39;t care how well it predicts nulls or unks</span>
+                <span class="n">predSoftmax</span> <span class="o">=</span> <span class="n">curr_pred</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
+                <span class="n">confidence</span> <span class="o">=</span> <span class="n">predSoftmax</span><span class="p">[</span><span class="n">trueInd</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+                <span class="n">product</span> <span class="o">*=</span> <span class="n">confidence</span>
+                <span class="n">num_factors</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">num_factors</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">geo_means</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">product</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">num_factors</span><span class="p">))</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">geo_means</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">geo_means</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">generate_mask</span><span class="p">(</span><span class="n">padded_seq</span><span class="p">,</span> <span class="n">masked_inds</span><span class="p">):</span>
+    <span class="n">batch_size</span> <span class="o">=</span> <span class="n">padded_seq</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">maxlen</span> <span class="o">=</span> <span class="n">padded_seq</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">padded_seq</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">maxlen</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">padded_seq</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">t</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">masked_inds</span><span class="p">:</span>
+                <span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="n">mask</span>
+
+<span class="k">def</span> <span class="nf">accuracies</span><span class="p">(</span><span class="n">padded_seq</span><span class="p">,</span> <span class="n">maxInds</span><span class="p">,</span> <span class="n">masked_inds</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;expects padded_seq and maxInds to be masked&#39;&#39;&#39;</span>
+    <span class="n">batch_size</span> <span class="o">=</span> <span class="n">padded_seq</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">maxlen</span> <span class="o">=</span> <span class="n">padded_seq</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">padded_seq</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">maxlen</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">padded_seq</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">t</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">masked_inds</span><span class="p">:</span>
+                <span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">num_masked</span> <span class="o">=</span> <span class="n">batch_size</span><span class="o">*</span><span class="n">maxlen</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="c1"># how many zeros in the mask?</span>
+    
+    <span class="n">correct_characters</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">maxInds</span> <span class="o">==</span> <span class="n">padded_seq</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">-</span> <span class="n">num_masked</span>
+    <span class="n">total_characters</span> <span class="o">=</span> <span class="n">batch_size</span><span class="o">*</span><span class="n">maxlen</span> <span class="o">-</span> <span class="n">num_masked</span> <span class="c1"># exclude masked indices from prediction</span>
+    <span class="c1"># we don&#39;t need to worry about unks, nulls, and masking in sentence because</span>
+    <span class="c1"># it&#39;ll only check if the &quot;good&quot; parts of the sentence are the same</span>
+    <span class="n">correct_sentences</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">total_sentences</span> <span class="o">=</span> <span class="n">batch_size</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">maxInds</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">padded_seq</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+            <span class="n">correct_sentences</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">sentence_accuracy</span> <span class="o">=</span> <span class="n">correct_sentences</span> <span class="o">/</span> <span class="n">total_sentences</span>
+    <span class="n">character_accuracy</span> <span class="o">=</span> <span class="n">correct_characters</span> <span class="o">/</span> <span class="n">total_characters</span>
+    <span class="k">return</span> <span class="n">sentence_accuracy</span><span class="p">,</span> <span class="n">character_accuracy</span>
+
+<span class="k">def</span> <span class="nf">print_metrics</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">testloader</span><span class="p">,</span> <span class="n">word</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">class_weights</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">weights</span>
+    <span class="n">masked_inds</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">class_weights</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">weight</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">masked_inds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+    <span class="n">loss_fn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">NLLLoss</span><span class="p">(</span><span class="n">weight</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">weights</span><span class="p">)</span>
+    <span class="n">losses</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">sentence_accuracies</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">character_accuracies</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">perplexities</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">testloader</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="n">padded_seq_in</span><span class="p">,</span> <span class="n">lengths_in</span><span class="p">,</span> <span class="n">padded_seq</span><span class="p">,</span> <span class="n">lengths</span> <span class="o">=</span> <span class="n">data</span>
+        
+        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">padded_seq</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">maxlen</span> <span class="o">=</span> <span class="n">padded_seq</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">padded_seq</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">maxlen</span><span class="p">):</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">padded_seq</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">t</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">masked_inds</span><span class="p">:</span>
+                    <span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">num_masked</span> <span class="o">=</span> <span class="n">batch_size</span><span class="o">*</span><span class="n">maxlen</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="c1"># how many zeros in the mask?</span>
+        
+        <span class="n">pred</span><span class="p">,</span> <span class="n">maxInds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">padded_seq</span><span class="p">,</span> <span class="n">lengths</span><span class="p">)</span>
+        <span class="n">vocab_size</span> <span class="o">=</span> <span class="n">pred</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        
+        <span class="n">perplexity</span> <span class="o">=</span> <span class="n">perplexity_metric</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">padded_seq</span><span class="p">,</span> <span class="n">masked_inds</span><span class="p">)</span>
+        
+        <span class="n">padded_seq_flat</span> <span class="o">=</span> <span class="n">padded_seq</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size</span><span class="o">*</span><span class="n">maxlen</span><span class="p">)</span>
+        <span class="n">pred_flat</span> <span class="o">=</span> <span class="n">pred</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size</span><span class="o">*</span><span class="n">maxlen</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">pred_flat</span><span class="p">,</span> <span class="n">padded_seq_flat</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+        
+        <span class="n">maxInds</span> <span class="o">=</span> <span class="n">maxInds</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">*</span><span class="n">mask</span>
+        <span class="n">padded_seq</span> <span class="o">=</span> <span class="n">padded_seq</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">*</span><span class="n">mask</span>
+        
+        <span class="n">correct_characters</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">maxInds</span> <span class="o">==</span> <span class="n">padded_seq</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">-</span> <span class="n">num_masked</span>
+        <span class="n">total_characters</span> <span class="o">=</span> <span class="n">batch_size</span><span class="o">*</span><span class="n">maxlen</span> <span class="o">-</span> <span class="n">num_masked</span> <span class="c1"># exclude masked indices from prediction</span>
+        <span class="c1"># we don&#39;t need to worry about unks, nulls, and masking in sentence because</span>
+        <span class="c1"># it&#39;ll only check if the &quot;good&quot; parts of the sentence are the same</span>
+        <span class="n">correct_sentences</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">total_sentences</span> <span class="o">=</span> <span class="n">batch_size</span>
+        
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">maxInds</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">padded_seq</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+                <span class="n">correct_sentences</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">sentence_accuracy</span> <span class="o">=</span> <span class="n">correct_sentences</span> <span class="o">/</span> <span class="n">total_sentences</span>
+        <span class="n">character_accuracy</span> <span class="o">=</span> <span class="n">correct_characters</span> <span class="o">/</span> <span class="n">total_characters</span>
+        
+        <span class="n">losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+        <span class="n">sentence_accuracies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sentence_accuracy</span><span class="p">)</span>
+        <span class="n">character_accuracies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">character_accuracy</span><span class="p">)</span>
+        <span class="n">perplexities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">perplexity</span><span class="p">)</span>
+    <span class="n">loss_avg</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">losses</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">losses</span><span class="p">)</span>
+    <span class="n">sentence_accuracy_avg</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">sentence_accuracies</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">sentence_accuracies</span><span class="p">)</span>
+    <span class="n">character_accuracy_avg</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">character_accuracies</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">character_accuracies</span><span class="p">)</span>
+    <span class="n">perplexity_avg</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">perplexities</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">perplexities</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">word</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;model: </span><span class="si">{}</span><span class="se">\n\t</span><span class="s1">validation loss: </span><span class="si">{}</span><span class="se">\n\t</span><span class="s1">sentence accuracy: </span><span class="si">{}</span><span class="se">\n\t</span><span class="s1">word accuracy: </span><span class="si">{}</span><span class="se">\n\t</span><span class="s1">perplexity: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">loss_avg</span><span class="p">,</span> <span class="n">sentence_accuracy_avg</span><span class="p">,</span> <span class="n">character_accuracy_avg</span><span class="p">,</span> <span class="n">perplexity_avg</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;model: </span><span class="si">{}</span><span class="se">\n\t</span><span class="s1">validation loss: </span><span class="si">{}</span><span class="se">\n\t</span><span class="s1">sentence accuracy: </span><span class="si">{}</span><span class="se">\n\t</span><span class="s1">character accuracy: </span><span class="si">{}</span><span class="se">\n\t</span><span class="s1">perplexity: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">loss_avg</span><span class="p">,</span> <span class="n">sentence_accuracy_avg</span><span class="p">,</span> <span class="n">character_accuracy_avg</span><span class="p">,</span> <span class="n">perplexity_avg</span><span class="p">))</span>
+</pre></div>
+
+</div>
 </div>
 </div>
 
@@ -12680,20 +12764,20 @@ final loss after 200 epochs: 0.2690542936325073
 
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>model: jp character predictor
-	validation loss: 1.0359487959316798
+	validation loss: 7.0974004452045145
 	sentence accuracy: 0.0
-	character accuracy: 0.8824169164169166
-	perplexity: 0.000256158712471985
+	character accuracy: 0.005538585359871667
+	perplexity: 0.0011325016939159921
 model: en character predictor
-	validation loss: 0.38650648295879364
+	validation loss: 6.973266262274522
 	sentence accuracy: 0.0
-	character accuracy: 0.9165669905904281
-	perplexity: 0.00980208015188648
+	character accuracy: 0.01284766504815531
+	perplexity: 0.0012184512784192488
 model: english word to word
-	validation loss: 0.5625579747415724
-	sentence accuracy: 0.0
-	word accuracy: 0.9287701863354039
-	perplexity: 0.001651558462524638
+	validation loss: 8.730575671562782
+	sentence accuracy: 0.1653565705128205
+	word accuracy: 0.01911625112464162
+	perplexity: 0.0005395181254771197
 </pre>
 </div>
 </div>
@@ -12701,6 +12785,15 @@ model: english word to word
 </div>
 </div>
 
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Note">Note<a class="anchor-link" href="#Note">&#182;</a></h3><p>Sentence accuracy is deceptive, since it counts sentences like <unk> <null> <null> as correct</p>
+
+</div>
+</div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
@@ -12710,8 +12803,8 @@ model: english word to word
 <div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">predict_sentence</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="n">loader</span><span class="p">):</span>
     <span class="n">seq_in</span><span class="p">,</span> <span class="n">len_in</span><span class="p">,</span> <span class="n">seq_true</span><span class="p">,</span> <span class="n">len_true</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">loader</span><span class="p">)</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
     <span class="n">pred</span><span class="p">,</span> <span class="n">maxInds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">seq_in</span><span class="p">,</span> <span class="n">len_in</span><span class="p">)</span>
-    <span class="n">trues</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">seq_true</span><span class="p">[</span><span class="mi">200</span><span class="p">:</span><span class="mi">201</span><span class="p">]</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
-    <span class="n">preds</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">maxInds</span><span class="p">[</span><span class="mi">200</span><span class="p">:</span><span class="mi">201</span><span class="p">]</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+    <span class="n">trues</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">seq_true</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">maxInds</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
     <span class="n">zipped</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">trues</span><span class="p">,</span> <span class="n">preds</span><span class="p">))</span>
     <span class="k">for</span> <span class="n">t</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">zipped</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
@@ -12733,10 +12826,86 @@ model: english word to word
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>[&#39;Six&#39;, &#39;&lt;unk&gt;&#39;, &#39;of&#39;, &#39;Takashima&#39;, &#39;,&#39;, &#39;&lt;unk&gt;&#39;, &#39;,&#39;, &#39;&lt;unk&gt;&#39;, &#39;,&#39;, &#39;&lt;unk&gt;&#39;, &#39;,&#39;, &#39;&lt;unk&gt;&#39;, &#39;and&#39;, &#39;Aichi&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;]
-[&#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;unk&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;, &#39;&lt;null&gt;&#39;]
+<pre>[&#39;&lt;unk&gt;&#39;, &#39;type&#39;, &#39;(&#39;, &#39;one&#39;, &#39;variety&#39;, &#39;of&#39;, &#39;ishi-doro&#39;, &#39;having&#39;, &#39;extraordinary&#39;, &#39;shape&#39;, &#39;and&#39;, &#39;having&#39;, &#39;natsume&#39;, &#39;(&#39;, &#39;a&#39;, &#39;tea&#39;, &#39;&lt;unk&gt;&#39;, &#39;for&#39;, &#39;powdered&#39;, &#39;tea&#39;, &#39;)&#39;, &#39;&lt;unk&gt;&#39;, &#39;carvings&#39;, &#39;around&#39;, &#39;hibukuro&#39;, &#39;,&#39;, &#39;which&#39;, &#39;&lt;unk&gt;&#39;, &#39;from&#39;, &#39;the&#39;, &#39;one&#39;, &#39;of&#39;, &#39;the&#39;, &#39;two&#39;, &#39;ishi-doro&#39;, &#39;existing&#39;, &#39;in&#39;, &#39;&lt;unk&gt;&#39;, &#39;Temple&#39;, &#39;in&#39;, &#39;Nijo&#39;, &#39;,&#39;, &#39;Kiyamachi&#39;, &#39;,&#39;, &#39;Kyoto&#39;, &#39;)&#39;]
+[&#39;a&#39;, &#39;Temple&#39;, &#39;of&#39;, &#39;Kyoto&#39;, &#39;)&#39;, &#39;)&#39;, &#39;the&#39;, &#39;)&#39;, &#39;)&#39;, &#39;)&#39;, &#39;)&#39;, &#39;)&#39;, &#39;)&#39;, &#39;)&#39;, &#39;Kyoto&#39;, &#39;tea&#39;, &#39;)&#39;, &#39;)&#39;, &#39;the&#39;, &#39;)&#39;, &#39;)&#39;, &#39;)&#39;, &#39;)&#39;, &#39;)&#39;, &#39;)&#39;, &#39;)&#39;, &#39;Kyoto&#39;, &#39;)&#39;, &#39;)&#39;, &#39;)&#39;, &#39;)&#39;, &#39;)&#39;, &#39;the&#39;, &#39;Imperial&#39;, &#39;)&#39;, &#39;)&#39;, &#39;)&#39;, &#39;)&#39;, &#39;)&#39;, &#39;)&#39;, &#39;Kyoto&#39;, &#39;)&#39;, &#39;Kyoto&#39;, &#39;)&#39;, &#39;)&#39;, &#39;)&#39;]
 </pre>
 </div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="accuracy-testing">accuracy testing<a class="anchor-link" href="#accuracy-testing">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[19]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">padded_seq</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">([</span>
+    <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="p">])</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<span class="n">maxInds</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">([</span>
+    <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="p">])</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">generate_mask</span><span class="p">(</span><span class="n">padded_seq</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="n">padded_seq</span> <span class="o">=</span> <span class="n">padded_seq</span> <span class="o">*</span> <span class="n">mask</span>
+<span class="n">maxInds</span> <span class="o">=</span> <span class="n">maxInds</span> <span class="o">*</span> <span class="n">mask</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">((</span><span class="n">padded_seq</span> <span class="o">==</span> <span class="n">maxInds</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">())</span>
+<span class="n">accuracies</span><span class="p">(</span><span class="n">padded_seq</span><span class="p">,</span> <span class="n">maxInds</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>tensor([[1., 1., 1., 0., 1.],
+        [0., 1., 1., 1., 0.],
+        [1., 0., 1., 0., 0.],
+        [0., 0., 0., 0., 0.]], device=&#39;cuda:0&#39;)
+tensor([[0., 1., 0., 1., 1.],
+        [1., 1., 0., 0., 1.],
+        [1., 1., 1., 1., 1.],
+        [1., 1., 1., 1., 1.]], device=&#39;cuda:0&#39;)
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[19]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(0.5, 0.5555555555555556)</pre>
+</div>
+
 </div>
 
 </div>
